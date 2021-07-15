@@ -42,3 +42,8 @@ bash scripts/run_pet.sh boolq 0 genaug_**augmented_file_name**_filter_max_eachla
 
 Note that which command to choose is based on the relative power of the augmentation model and the classification model. If the augmentation model is accurate enough, choose the command with "sep". Otherwise, choose the first one.  
 
+## Citation
+Please cite us if FlipDA is useful in your work:
+```Bash
+
+```
