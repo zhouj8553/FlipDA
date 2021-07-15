@@ -16,8 +16,13 @@ First, you should run the baseline
 ```Bash
 bash scripts/run_pet.sh **task_name** 0 baseline
 ```
+## Produce augmented files
+```Bash
+CUDA_VISIBLE_DEVICES=0 python -m genaug.total_gen_aug --task_name BoolQ --mask_ratio 0.3 --aug_type 'default' --label_type 'flip' --do_sample --aug_num 10
+```
 
-## Run baselines with augmented files
+## Run baselines with augmented files without classifier
+You coulf run the command as follows.
 ```Bash
 bash scripts/run_pet.sh boolq 0 augmented_file_name
 ```
