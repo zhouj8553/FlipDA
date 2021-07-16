@@ -22,7 +22,7 @@ CUDA_VISIBLE_DEVICES=0 python -m genaug.total_gen_aug --task_name BoolQ --mask_r
 ```
 
 ## Run baselines with augmented files without classifier
-You coulf run the command as follows.
+If you want to add all the augmented data in the augmented files into the model (you do not want to change the label according to the trained classifier or filter the augmented examples), you could run the command as follows.
 ```Bash
 bash scripts/run_pet.sh boolq 0 augmented_file_name
 ```
