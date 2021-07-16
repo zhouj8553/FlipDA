@@ -1,0 +1,19 @@
+CUDA_VISIBLE_DEVICES=0 python -m genaug.total_gen_aug --task_name BoolQ --mask_ratio 0.3 --aug_type 'default' --label_type 'flip' --do_sample --num_beams 1 --aug_num 10
+CUDA_VISIBLE_DEVICES=3 python -m genaug.total_gen_aug --task_name BoolQ --mask_ratio 0.3 --aug_type 'default' --label_type 'keep' --do_sample --num_beams 1 --aug_num 10
+
+CUDA_VISIBLE_DEVICES=0 python -m genaug.total_gen_aug --task_name RTE --mask_ratio 0.5 --aug_type 'default' --label_type 'flip' --do_sample --num_beams 1  --aug_num 10 >myout.file 2>&1 &
+CUDA_VISIBLE_DEVICES=1 python -m genaug.total_gen_aug --task_name RTE --mask_ratio 0.5 --aug_type 'default' --label_type 'keep' --do_sample --num_beams 1  --aug_num 10 >myout.file 2>&1 &
+
+CUDA_VISIBLE_DEVICES=2 python -m genaug.total_gen_aug --task_name CB --mask_ratio 0.5 --aug_type 'default' --label_type 'flip' --do_sample --num_beams 1 --aug_num 10 >myout.file 2>&1 &
+CUDA_VISIBLE_DEVICES=3 python -m genaug.total_gen_aug --task_name CB --mask_ratio 0.5 --aug_type 'default' --label_type 'keep' --do_sample --num_beams 1 --aug_num 10 >myout.file 2>&1 &
+
+CUDA_VISIBLE_DEVICES=4 python -m genaug.total_gen_aug --task_name COPA --mask_ratio 0.8 --aug_type 'default' --label_type 'flip' --num_beams 10 --aug_num 10 >myout.file 2>&1 &
+CUDA_VISIBLE_DEVICES=5 python -m genaug.total_gen_aug --task_name COPA --mask_ratio 0.8 --aug_type 'default' --label_type 'keep' --num_beams 10 --aug_num 10 >myout.file 2>&1 &
+
+CUDA_VISIBLE_DEVICES=6 python -m genaug.total_gen_aug --task_name MultiRC --mask_ratio 0.5 --aug_type 'rand_iter_10' --label_type 'flip' --num_beams 1 --do_sample --aug_num 10 >myout.file 2>&1 &
+CUDA_VISIBLE_DEVICES=7 python -m genaug.total_gen_aug --task_name MultiRC --mask_ratio 0.5 --aug_type 'rand_iter_10' --label_type 'keep' --num_beams 1 --do_sample --aug_num 10 >myout.file 2>&1 &
+
+CUDA_VISIBLE_DEVICES=0 python -m genaug.total_gen_aug --task_name WiC --mask_ratio 0.8 --aug_type 'default' --label_type 'flip' --num_beams 1 --do_sample --aug_num 10 >myout.file 2>&1 &
+CUDA_VISIBLE_DEVICES=1 python -m genaug.total_gen_aug --task_name WiC --mask_ratio 0.8 --aug_type 'default' --label_type 'keep' --num_beams 1 --do_sample --aug_num 10 >myout.file 2>&1 &
+
+CUDA_VISIBLE_DEVICES=2 python -m genaug.total_gen_aug --task_name WSC --mask_ratio 0.3 --aug_type 'default' --label_type 'keep' --wsc_aug_type 'extra' --num_beams 1 --aug_num 10
