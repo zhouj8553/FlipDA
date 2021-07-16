@@ -516,7 +516,8 @@ class WSCAug(FewGLUEAug):
         self.TASK_NAME="WSC"
 
     def aug_with_pattern(self,texts,word1,word2,gen_blanks_func,aug_kwargs,label_type='keep',mask_ratio=0.5,aug_type='rand_iter'):
-        if label_type=='flip': continue
+        if label_type=='flip':
+            raise NotImplementedError
         bad_words_ids=[[3], [19794], [22354]]
         aug_kwargs['bad_words_ids']=bad_words_ids
         masked1,tgt1,cnt1=self.mask_text(texts[0],mask_ratio=mask_ratio)
