@@ -12,9 +12,9 @@ Install and setup environment with requirements.txt.
 The FewGLUE dataset is in the folder "data".
 
 ## Run Baseline
-First, you should run the baseline
+First, you should run the baseline. **task_name** could be "boolq", "rte", "cb", "copa", "wsc", "wic", and "multirc". 
 ```Bash
-bash scripts/run_pet.sh **task_name** 0 baseline
+bash scripts/run_pet.sh **task_name**  baseline
 ```
 ## Produce augmented files
 ```Bash
