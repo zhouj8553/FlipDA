@@ -9,7 +9,7 @@ We provide an automatic data augmentation method based on T5 and self-training b
 
 ## Setup
 Install and setup environment with requirements.txt.
-The FewGLUE dataset is in the folder "data".
+The FewGLUE dataset is in the folder __data__. The data could be downloaded in https://cloud.tsinghua.edu.cn/d/0d1a737d3b4f40a3b853/.
 
 ## Run Baseline
 First, you should run the baseline. <task_name> could be "boolq", "rte", "cb", "copa", "wsc", "wic", and "multirc". <gpu_id> could be 0,1,2,..., according to the number of your gpu.
