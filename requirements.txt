@@ -1,0 +1,10 @@
+numpy==1.20.2
+nltk==3.6.2
+transformers==4.5.1
+torch==1.5.0
+tqdm==4.49.0
+scipy==1.6.3
+jsonpickle==2.0.0
+scikit_learn==0.24.2
+sentence_transformers==2.0.0
+spacy==3.1.1
