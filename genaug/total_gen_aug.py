@@ -7,7 +7,7 @@ import numpy as np
 import random
 import string
 from tqdm import tqdm
-from baseline_aug.utils import *
+from genaug.utils import *
 from genaug import gen_aug_T5
 from nltk.tokenize import sent_tokenize
 def line_tokenizer(text):
