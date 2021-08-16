@@ -84,5 +84,12 @@ Note that we do not try all the hyperparameter combinations to save time and avo
 ## Citation
 Please cite us if FlipDA is useful in your work:
 ```Bash
-
+@misc{zhou2021flipda,
+      title={FlipDA: Effective and Robust Data Augmentation for Few-Shot Learning}, 
+      author={Jing Zhou and Yanan Zheng and Jie Tang and Jian Li and Zhilin Yang},
+      year={2021},
+      eprint={2108.06332},
+      archivePrefix={arXiv},
+      primaryClass={cs.CL}
+}
 ```
