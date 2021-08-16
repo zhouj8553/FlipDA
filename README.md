@@ -54,9 +54,9 @@ bash scripts/run_pet.sh boolq 0 <augmented_file_name>
 ```
 
 ## Step3: Run FlipDA with augmented files
-If the <augmented_file_name> has the corresponding version, we will load it. For example, if the filename is "t5_flip_0.5_default_sample0_beam1_augnum1" and we find "t5_keep_0.5_default_sample0_beam1_augnum1", we will load them both.
+If the <augmented_file_name> has the corresponding version, we will load it. For example, if the filename is "t5_flip_0.5_default_sample0_beam1_augnum10" and we find "t5_keep_0.5_default_sample0_beam1_augnum10", we will load them both.
 
-If you allow the classifier to correct the label of the augmented data, run the command as follows, where <augmented_file_name> is the augmented file name such as "t5_flip_0.5_default_sample0_beam1_augnum1".
+If you allow the classifier to correct the label of the augmented data, run the command as follows, where <augmented_file_name> is the augmented file name such as "t5_flip_0.5_default_sample0_beam1_augnum10".
 ```Bash
 bash scripts/run_pet.sh boolq 0 genaug_<augmented_file_name>_filter_max_eachla
 ```
