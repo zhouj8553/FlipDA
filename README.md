@@ -32,7 +32,7 @@ bash scripts/run_pet.sh wic 6 baseline
 If you run the command and shell as default, the results will be in _results/baseline/pet/<task_name>\_albert\_model/result_test.txt_.
 
 ## Step2: Produce augmented files
-The code to generate augmented examples by T5 model is in _genaug/total_gen_aug.py_.
+The code to generate augmented examples by T5 model is in _genaug/total_gen_aug.py_. Some of the augmented files is in https://cloud.tsinghua.edu.cn/d/0d1a737d3b4f40a3b853/.
 
 You could use the command as follows to generate augmented examples. <task_name> could be "BoolQ", "RTE", "CB", "COPA", "WSC", "WiC", and "MultiRC". <mask_ratio> could be arbitrary floating point number between 0 and 1, and in our experiments, we only tried 0.3, 0.5, and 0.8. <aug_type> could be "default" or "rand_iter_%d", where %d could be any integers. <label_type> could be "flip" or "keep". "do_sample" and "num_beams" controls the generation style (sample/greedy/beam search). <aug_num> denotes the number of augmented samples to be generated for each sample, in our experiments, we choose <aug_num> 10.
 
