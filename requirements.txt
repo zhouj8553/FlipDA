@@ -6,5 +6,4 @@ tqdm==4.49.0
 scipy==1.6.3
 jsonpickle==2.0.0
 scikit_learn==0.24.2
-sentence_transformers==2.0.0
 spacy==3.1.1
