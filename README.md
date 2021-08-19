@@ -9,7 +9,7 @@ We provide an automatic data augmentation method based on T5 and self-training b
 
 ## Setup
 Install and setup environment with requirements.txt.
-All our experiments are conducted on a single V100 with 32G VIDEO MEMORY.
+All our experiments are conducted on a single V100 with 32G VIDEO MEMORY with cuda version 11.0.
 The FewGLUE dataset is default placed in the folder _data_. The data could be downloaded in https://cloud.tsinghua.edu.cn/d/0d1a737d3b4f40a3b853/.
 
 ## Step1: Run Baseline
