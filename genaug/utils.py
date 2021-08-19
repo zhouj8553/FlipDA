@@ -80,19 +80,19 @@ def get_pps(doc):
 
 from sklearn.metrics.pairwise import cosine_similarity
 import numpy as np
-class SBERT():
-    def __init__(self,):
-        from sentence_transformers import SentenceTransformer
-        self.model = SentenceTransformer('paraphrase-distilroberta-base-v1')
+# class SBERT():
+#     def __init__(self,):
+#         from sentence_transformers import SentenceTransformer
+#         self.model = SentenceTransformer('paraphrase-distilroberta-base-v1')
 
-    def get_embeddings(self,sentences):
-        return self.model.encode(sentences)
+#     def get_embeddings(self,sentences):
+#         return self.model.encode(sentences)
 
-    def get_cos_similarity(self,sent_embs=[[0,1,2],[2,3,4]],tgt_emb=[5,6,7]):
-        scores=[]
-        for sent_emb in sent_embs:
-            scores.append(cosine_similarity(np.array([sent_emb,tgt_emb]))[0,1])
-        return scores
+#     def get_cos_similarity(self,sent_embs=[[0,1,2],[2,3,4]],tgt_emb=[5,6,7]):
+#         scores=[]
+#         for sent_emb in sent_embs:
+#             scores.append(cosine_similarity(np.array([sent_emb,tgt_emb]))[0,1])
+#         return scores
 
 def softmax(x,temp=1):
     x=np.array(x)
