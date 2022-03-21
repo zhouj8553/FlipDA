@@ -5,7 +5,7 @@ This repository contains the official code for FlipDA.
 We provide an automatic data augmentation method based on T5 and self-training by flipping the label. We evaluate it on FewGLUE, and improve its performance. Our code is based on https://github.com/timoschick/pet.
 
 ## Model
-![image](https://github.com/zhouj8553/FlipDA/blob/main/img/model.png)
+![image](https://github.com/zhouj8553/FlipDA/blob/main-v1/img/model.png)
 
 ## Setup
 Install and setup environment with requirements.txt.
@@ -25,7 +25,7 @@ bash scripts/run_pet.sh rte 1 baseline
 bash scripts/run_pet.sh cb 2 baseline
 bash scripts/run_pet.sh multirc 3 baseline
 bash scripts/run_pet.sh copa 4 baseline
-bash scripts/run_pet.sh wsc 5 baseline"
+bash scripts/run_pet.sh wsc 5 baseline
 bash scripts/run_pet.sh wic 6 baseline
 ```
 
