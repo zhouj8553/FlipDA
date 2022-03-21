@@ -55,6 +55,7 @@ elif [ $TASK = "copa" ]; then
   DATA_DIR=${DATA_ROOT}COPA
   TRAIN_BATCH_SIZE=4
   ACCU=4
+  SEQ_LENGTH=96
 elif [ $TASK = "multirc" ]; then
   # PATTERN_IDS="0 1 2 3"
   PATTERN_IDS="0 1 2"
@@ -74,47 +75,7 @@ else
 fi
 
 
-if [ $TASK = "record" ]; then
-  echo "type0" $TASK
-  CUDA_VISIBLE_DEVICES=$device nohup python3 cli.py \
-  --method $METHOD \
-  --pattern_ids $PATTERN_IDS \
-  --data_dir $DATA_DIR \
-  --model_type $MODEL_TYPE \
-  --model_name_or_path $MODEL_NAME_OR_PATH \
-  --task_name $TASK \
-  --output_dir $OUTPUT_DIR \
-  --do_train \
-  --do_eval \
-  --pet_per_gpu_eval_batch_size 1 \
-  --pet_per_gpu_train_batch_size $TRAIN_BATCH_SIZE \
-  --pet_gradient_accumulation_steps $ACCU \
-  --pet_max_steps 250 \
-  --pet_max_seq_length $SEQ_LENGTH \
-  --pet_repetitions 3 \
-  --no_distillation \
-  --search_type $search_type >myout_${METHOD}_${MODEL_TYPE}_${TASK}_${search_type}.file 2>&1 &
-elif [ $TASK = "copa" ]; then
-  echo "type1" $TASK
-  CUDA_VISIBLE_DEVICES=$device nohup python3 cli.py \
-  --method $METHOD \
-  --pattern_ids $PATTERN_IDS \
-  --data_dir $DATA_DIR \
-  --model_type $MODEL_TYPE \
-  --model_name_or_path $MODEL_NAME_OR_PATH \
-  --task_name $TASK \
-  --output_dir $OUTPUT_DIR \
-  --do_train \
-  --do_eval \
-  --pet_per_gpu_eval_batch_size 1 \
-  --pet_per_gpu_train_batch_size $TRAIN_BATCH_SIZE \
-  --pet_gradient_accumulation_steps $ACCU \
-  --pet_max_steps 250 \
-  --pet_max_seq_length 96 \
-  --pet_repetitions 3 \
-  --no_distillation \
-  --search_type $search_type >myout_${METHOD}_${MODEL_TYPE}_${TASK}_${search_type}.file 2>&1 &
-elif [ $TASK = "wsc" ]; then
+if [[ $TASK = "record" || $TASK = "wsc" || $TASK = "copa" ]]; then
   echo "type1" $TASK
   CUDA_VISIBLE_DEVICES=$device nohup python3 cli.py \
   --method $METHOD \
@@ -134,47 +95,7 @@ elif [ $TASK = "wsc" ]; then
   --pet_repetitions 3 \
   --no_distillation \
   --search_type $search_type >myout_${METHOD}_${MODEL_TYPE}_${TASK}_${search_type}.file 2>&1 &
-elif [ $TASK = 'multirc' ]; then
-  echo "type2" $TASK
-  CUDA_VISIBLE_DEVICES=$device nohup python3 cli.py \
-  --method $METHOD \
-  --pattern_ids $PATTERN_IDS \
-  --data_dir $DATA_DIR \
-  --model_type $MODEL_TYPE \
-  --model_name_or_path $MODEL_NAME_OR_PATH \
-  --task_name $TASK \
-  --output_dir $OUTPUT_DIR \
-  --do_train \
-  --do_eval \
-  --pet_per_gpu_eval_batch_size 32 \
-  --pet_per_gpu_train_batch_size $TRAIN_BATCH_SIZE \
-  --pet_gradient_accumulation_steps $ACCU \
-  --pet_max_steps 250 \
-  --pet_max_seq_length $SEQ_LENGTH \
-  --pet_repetitions 3 \
-  --no_distillation \
-  --search_type $search_type >myout_${METHOD}_${MODEL_TYPE}_${TASK}_${search_type}.file 2>&1 &
-elif [ $TASK = 'wic' ]; then
-  echo "type2" $TASK
-  CUDA_VISIBLE_DEVICES=$device nohup python3 cli.py \
-  --method $METHOD \
-  --pattern_ids $PATTERN_IDS \
-  --data_dir $DATA_DIR \
-  --model_type $MODEL_TYPE \
-  --model_name_or_path $MODEL_NAME_OR_PATH \
-  --task_name $TASK \
-  --output_dir $OUTPUT_DIR \
-  --do_train \
-  --do_eval \
-  --pet_per_gpu_eval_batch_size 32 \
-  --pet_per_gpu_train_batch_size $TRAIN_BATCH_SIZE \
-  --pet_gradient_accumulation_steps $ACCU \
-  --pet_max_steps 250 \
-  --pet_max_seq_length $SEQ_LENGTH \
-  --pet_repetitions 3 \
-  --no_distillation \
-  --search_type $search_type >myout_${METHOD}_${MODEL_TYPE}_${TASK}_${search_type}.file 2>&1 &
-elif [[ $TASK = "rte" || $TASK = "cb" || $TASK = 'boolq' ]]; then
+elif [[ $TASK = "rte" || $TASK = "cb" || $TASK = 'boolq' || $TASK = 'wic' || $TASK = 'multirc' ]]; then
   echo "type2" $TASK
   CUDA_VISIBLE_DEVICES=$device nohup python3 cli.py \
   --method $METHOD \
@@ -196,19 +117,3 @@ elif [[ $TASK = "rte" || $TASK = "cb" || $TASK = 'boolq' ]]; then
   --search_type $search_type >myout_${METHOD}_${MODEL_TYPE}_${TASK}_${search_type}.file 2>&1 &
 fi
 
-
-# bash scripts/run_pet.sh boolq 0 baseline
-# bash scripts/run_pet.sh rte 1 baseline
-# bash scripts/run_pet.sh cb 2 baseline
-# bash scripts/run_pet.sh multirc 3 baseline
-# bash scripts/run_pet.sh copa 4 baseline
-# bash scripts/run_pet.sh wsc 5 baseline
-# bash scripts/run_pet.sh wic 6 baseline
-
-# bash scripts/run_pet.sh copa 4 genaug_t5_flip_0.8_default_sample0_beam10_augnum10_filter_max_eachla_sep
-# bash scripts/run_pet.sh rte 1 genaug_t5_flip_0.5_default_sample1_beam1_augnum10_filter_max_eachla_sep
-# bash scripts/run_pet.sh boolq 2 genaug_t5_flip_0.3_default_sample1_beam1_augnum10_filter_max_eachla
-# bash scripts/run_pet.sh cb 3 genaug_t5_flip_0.5_default_sample1_beam1_augnum10_filter_max_eachla
-# bash scripts/run_pet.sh wic 4 genaug_t5_flip_0.8_default_sample0_beam1_augnum10_filter_max_eachla_sep
-# bash scripts/run_pet.sh wsc 5 genaug_t5_keep_0.3_default_sample0_beam1_augnum10wscaugtype_extra_filter_max_prevla
-# bash scripts/run_pet.sh multirc 6 genaug_t5_flip_0.5_rand_iter_10_sample1_beam1_augnum10_filter_max_eachla_sep
