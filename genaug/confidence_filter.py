@@ -211,9 +211,12 @@ class Confidence_Filter(object):
                         filtered_num[label_trans]+=1
         elif recover_type==('max_eachla'): # We may flip the label according to the filter
             for examples in rearranged_examples:
+                # import pdb 
+                # pdb.set_trace()
                 logits=self.validate(wrapper,examples,eval_config)['logits']
                 logits=softmax(logits/10,axis=1)
                 for la in range(label_num):
+                    if (wrapper.config.task_name=='record' or wrapper.config.task_name=='wsc') and la==0: continue
                     max_idx=-1
                     for (idx,logit) in enumerate(logits):
                         if np.argmax(logit)==la and (max_idx==-1 or logit[la]>logits[max_idx,la]):
@@ -228,6 +231,7 @@ class Confidence_Filter(object):
         elif recover_type==('max_eachla_sep'):
             for aug_examples in rearranged_examples:
                 for la in range(label_num):
+                    if (wrapper.config.task_name=='record' or wrapper.config.task_name=='wsc') and la==0: continue
                     examples=[e for e in aug_examples if label_map[e.label]==la]
                     if len(examples)==0: continue
                     logits=self.validate(wrapper,examples,eval_config)['logits']
