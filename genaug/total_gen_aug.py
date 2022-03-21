@@ -24,8 +24,8 @@ def set_seed(seed):
     torch.backends.cudnn.enabled=False
 
 class FewGLUEAug():
-    def __init__(self,):
-        pass
+    def __init__(self,args):
+        self.args=args
 
     def read_jsonl(self,file_path):
         examples=[]
@@ -41,15 +41,37 @@ class FewGLUEAug():
                 f.write(json.dumps(e)+'\n')
         f.close()
 
-    def mask_text(self,text,mask_ratio=0.5,cnt=0,substitute_verbalizers=['<extra_id_{}>'.format(i) for i in range(300)],allow_substitute_punctuation=False, at_least_one=False):
+    def mask_text(self,text,mask_ratio=0.5,cnt=0,substitute_verbalizers=['<extra_id_{}>'.format(i) for i in range(300)],allow_substitute_punctuation=False, at_least_one=False, unchanged_phrases=[],changed_word_list=[]):
         tokens=nltk_line_tokenizer(text)
         n=len(tokens)
+        unchanged_phrases=[x.lower() for x in unchanged_phrases]
+        splited_unchanged_phrases=[nltk_line_tokenizer(x.lower()) for x in unchanged_phrases]
+        changed_word_list=[x.lower() for x in changed_word_list]
         if allow_substitute_punctuation:
-            indices=sorted(random.sample(range(n),int(n*mask_ratio)))
-        else:
-            candidate_idxs=[i for i in range(n) if tokens[i] not in string.punctuation]
+            candidate_idxs=np.ones(n)
+            for i in range(n):
+                for splited_unchanged_phrase in splited_unchanged_phrases:
+                    if ' '.join(tokens[i:i+len(splited_unchanged_phrase)]).lower()==' '.join(splited_unchanged_phrase):
+                        candidate_idxs[i:i+len(splited_unchanged_phrase)]=0
+            candidate_idxs=[i for (i,x) in enumerate(candidate_idxs) if x==1]
+            # candidate_idxs=[i for i in range(n) if tokens[i].lower() not in unchanged_word_list]
+            idxs_should_be_changed=[i for i in range(n) if tokens[i].lower() in changed_word_list]
             n=len(candidate_idxs)
-            indices=sorted(random.sample(candidate_idxs,int(n*mask_ratio)))
+            indices=sorted(list(set(random.sample(candidate_idxs,int(n*mask_ratio))+idxs_should_be_changed)))
+            # indices=sorted(random.sample(range(n),int(n*mask_ratio)))
+        else:
+            candidate_idxs=np.ones(n)
+            for i in range(n):
+                for splited_unchanged_phrase in splited_unchanged_phrases:
+                    if tokens[i] in string.punctuation:
+                        candidate_idxs[i]=0
+                    if ' '.join(tokens[i:i+len(splited_unchanged_phrase)]).lower()==' '.join(splited_unchanged_phrase):
+                        candidate_idxs[i:i+len(splited_unchanged_phrase)]=0
+            candidate_idxs=[i for (i,x) in enumerate(candidate_idxs) if x==1]
+            # candidate_idxs=[i for i in range(n) if tokens[i] not in string.punctuation and tokens[i].lower() not in unchanged_word_list]
+            idxs_should_be_changed=[i for i in range(n) if tokens[i].lower() in changed_word_list]
+            n=len(candidate_idxs)
+            indices=sorted(list(set(random.sample(candidate_idxs,int(n*mask_ratio))+idxs_should_be_changed)))
         if at_least_one==True and len(indices)==0:
             indices=sorted(random.sample(range(n),1))
         masked_src, masked_tgt = "", []
@@ -147,8 +169,8 @@ class FewGLUEAug():
         return processed_parts
 
 class RTEAug(FewGLUEAug):
-    def __init__(self):
-        super(FewGLUEAug,self).__init__()
+    def __init__(self,args):
+        super().__init__(args)
         self.TASK_NAME="RTE"
 
     def aug_with_pattern(self,question,passage,label,gen_blanks_func,aug_kwargs,label_type='flip',mask_ratio=0.5,aug_type='rand_iter',aug_num=1):
@@ -207,8 +229,8 @@ class RTEAug(FewGLUEAug):
         return new_examples
 
 class CBAug(FewGLUEAug):
-    def __init__(self):
-        super(FewGLUEAug,self).__init__()
+    def __init__(self,args):
+        super().__init__(args)
         self.TASK_NAME="CB"
 
     def aug_with_pattern(self,question,passage,label,gen_blanks_func,aug_kwargs,label_type='flip',mask_ratio=0.5,aug_type='rand_iter',aug_num=1):
@@ -274,8 +296,8 @@ class CBAug(FewGLUEAug):
         return new_examples
 
 class BoolQAug(FewGLUEAug):
-    def __init__(self):
-        super(FewGLUEAug,self).__init__()
+    def __init__(self,args):
+        super().__init__(args)
         self.TASK_NAME="BoolQ"
 
     def aug_with_pattern(self,question,passage,label,gen_blanks_func,aug_kwargs,label_type='flip',mask_ratio=0.5,aug_type='rand_iter',aug_num=1):
@@ -332,8 +354,8 @@ class BoolQAug(FewGLUEAug):
 
 
 class COPAAug(FewGLUEAug):
-    def __init__(self):
-        super(FewGLUEAug,self).__init__()
+    def __init__(self,args):
+        super().__init__(args)
         self.TASK_NAME="COPA"
 
     def aug_with_pattern(self,premise,choice1,choice2,question,label,gen_blanks_func,aug_kwargs,label_type='flip',mask_ratio=0.5,aug_type='rand_iter',aug_num=1,global_premises=None):
@@ -402,8 +424,8 @@ class COPAAug(FewGLUEAug):
         return new_examples
 
 class WiCAug(FewGLUEAug):
-    def __init__(self):
-        super(FewGLUEAug,self).__init__()
+    def __init__(self,args):
+        super().__init__(args)
         self.TASK_NAME="WiC"
 
     def aug_with_pattern(self,texts,word,word1,word2,label,gen_blanks_func,aug_kwargs,label_type='flip',mask_ratio=0.5,aug_type='rand_iter',aug_num=1,global_premises=None):
@@ -506,13 +528,13 @@ class WiCAug(FewGLUEAug):
         return new_examples
 
 '''
-from genaug import total_gen_aug_v2
-myaug=total_gen_aug_v2.WSCAug()
+from genaug import total_gen_aug
+myaug=total_gen_aug.WSCAug()
 filtered_nouns=myaug.prepare_wsc_nouns()
 '''
 class WSCAug(FewGLUEAug):
-    def __init__(self):
-        super(FewGLUEAug,self).__init__()
+    def __init__(self,args):
+        super().__init__(args)
         self.TASK_NAME="WSC"
 
     def aug_with_pattern(self,texts,word1,word2,gen_blanks_func,aug_kwargs,label_type='keep',mask_ratio=0.5,aug_type='rand_iter'):
@@ -590,9 +612,10 @@ class WSCAug(FewGLUEAug):
         self.save_jsonl(new_examples,os.path.join(data_path,"augmented/{}/{}_train.jsonl".format(self.TASK_NAME,aug_func_name)))
         return new_examples
 
+
 class MultiRCAug(FewGLUEAug):
-    def __init__(self):
-        super(FewGLUEAug,self).__init__()
+    def __init__(self,args):
+        super().__init__(args)
         self.TASK_NAME="MultiRC"
 
     def aug_with_pattern(self,question,passage,answer,label,gen_blanks_func,aug_kwargs,label_type='flip',mask_ratio=0.5,aug_type='rand_iter',aug_num=1):
@@ -648,6 +671,105 @@ class MultiRCAug(FewGLUEAug):
         self.save_jsonl(new_examples,os.path.join(data_path,"augmented/{}/{}_train.jsonl".format(self.TASK_NAME,aug_func_name)))
         return new_examples
 
+
+class ReCoRDAug(FewGLUEAug):
+    def __init__(self,args):
+        super().__init__(args)
+        self.TASK_NAME="ReCoRD"
+        from transformers import T5Tokenizer
+        self.tokenizer=T5Tokenizer.from_pretrained(self.args.model_name_or_path)
+
+    def aug_with_pattern(self,passage,question,entities,answers,gen_blanks_func,aug_kwargs,label_type='flip',mask_ratio=0.5,aug_type='rand_iter',aug_num=1):
+        bad_words_ids=[[3], [19794], [22354]]
+        aug_kwargs['bad_words_ids']=bad_words_ids
+        texts_to_be_augmented=[];tgt_texts=[]
+        masked_parts=[]
+        new_questions=[];new_passages=[];new_entities=[];new_answers=[]
+        aug_idx=0
+        patience=10
+        retry_number=0
+        while(aug_idx<aug_num):
+            if label_type=='flip':
+                new_answer=np.random.choice([x for x in entities if x not in answers and x not in question])
+                new_answers.append([new_answer])
+            else:
+                new_answers.append(answers)
+            new_entities.append(entities)
+            masked_question,question_tgt,question_cnt=self.mask_text(question.replace('@placeholder',new_answers[-1][0]),mask_ratio=mask_ratio,unchanged_phrases=new_answers[-1])
+            if label_type=='flip':
+                masked_passage,passage_tgt,passage_cnt=self.mask_text(passage,cnt=question_cnt,mask_ratio=mask_ratio,changed_word_list=list(set([y for x in answers for y in x.split()])))
+            else:
+                masked_passage,passage_tgt,passage_cnt=self.mask_text(passage,cnt=question_cnt,mask_ratio=mask_ratio)
+            new_answer=' '.join(nltk_line_tokenizer(new_answers[aug_idx][0]))
+            replaced_mask_question=masked_question.replace(new_answer,'@placeholder').replace(new_answers[aug_idx][0],'@placeholder')
+            if replaced_mask_question.count('@placeholder')!=1:
+                print('retry')
+                retry_number+=1
+                if retry_number>patience:
+                    start_pos=masked_question.find(new_answer)
+                    end_pos=start_pos+len(new_answer)
+                    replaced_mask_question=masked_question[:start_pos]+'@placeholder'+masked_question[end_pos:]
+                else:
+                    new_answers=new_answers[:-1]
+                    new_entities=new_entities[:-1]
+                    continue
+            texts_to_be_augmented.append(masked_question+masked_passage)
+            tgt_texts.append(question_tgt+passage_tgt)
+            masked_parts.append([replaced_mask_question,masked_passage])
+            aug_idx+=1
+        pred_blanks=self.predict_blanks(texts_to_be_augmented,tgt_texts,gen_blanks_func,aug_kwargs,aug_type=aug_type)
+        filled_parts=self.recover_examples_from_blanks(masked_parts,pred_blanks)
+        for (aug_idx,parts) in enumerate(filled_parts):
+            [new_question,new_passage]=parts
+            new_passages.append(new_passage)
+            if new_question.count('@placeholder')!=1:
+                raise SyntaxError('could only have one @placeholder in the question')
+            new_questions.append(new_question)
+        return new_passages,new_questions,new_entities,new_answers
+
+    def get_entities_and_ans(self,e):
+        entities = set()
+        for entity_json in e['passage']['entities']:
+            start = entity_json['start']
+            end = entity_json['end']
+            entity = e['passage']['text'][start:end + 1]
+            entities.add(entity)
+        entities = list(entities)
+        answers=set()
+        for answer_json in e['qas'][0].get('answers', []):
+            answer = answer_json['text']
+            answers.add(answer)
+        answers = list(answers)
+        return entities, answers
+
+    def augment(self,data_path,aug_func,aug_func_name,aug_kwargs,aug_num=1):
+        examples=self.read_jsonl(os.path.join(data_path,"{}/train.jsonl".format(self.TASK_NAME)))
+        new_examples=[]
+        for e in tqdm(examples):
+            entities, answers=self.get_entities_and_ans(e)
+            new_passages,new_questions,new_entities,new_answers=self.aug_with_pattern(e["passage"]["text"].replace("@highlight\n", "- "),e["qas"][0]["query"],entities,answers,aug_func,**aug_kwargs,aug_num=aug_num)
+            if isinstance(new_passages,list):
+                for (x,y,z,w) in zip(new_passages,new_questions,new_entities,new_answers):
+                    tmp_e=copy.deepcopy(e)
+                    tmp_e['passage']['entities']=[]
+                    tmp_e["passage"]["text"]=x 
+                    tmp_e["qas"][0]["query"]=y
+                    tmp_e["passage"]["entity_names"]=z
+                    tmp_e["qas"][0]["answers"]=[{'start': -1, 'end': -1, 'text': ans} for ans in w]
+                    new_examples.append(tmp_e)
+            else:
+                tmp_e=copy.deepcopy(e)
+                tmp_e['passage']['entities']=[]
+                tmp_e["passage"]["text"]=new_passages
+                tmp_e["qas"][0]["query"]=new_questions
+                tmp_e["passage"]["entity_names"]=new_entities
+                tmp_e["qas"][0]["answers"]=[{'start': -1, 'end': -1, 'text': ans} for ans in new_answers]
+                new_examples.append(tmp_e)
+        if not os.path.exists(os.path.join(data_path,"augmented/{}".format(self.TASK_NAME))):
+            os.makedirs(os.path.join(data_path,"augmented/{}".format(self.TASK_NAME)))
+        self.save_jsonl(new_examples,os.path.join(data_path,"augmented/{}/{}_train.jsonl".format(self.TASK_NAME,aug_func_name)))
+        return new_examples
+
 FEWGLUEAUGS = {
     "WSC": WSCAug,
     "RTE": RTEAug,
@@ -656,6 +778,7 @@ FEWGLUEAUGS = {
     "BoolQ": BoolQAug,
     "COPA": COPAAug,
     "MultiRC": MultiRCAug,
+    "ReCoRD":ReCoRDAug
 } 
 
 import argparse
@@ -669,6 +792,7 @@ def init_args():
     parser.add_argument("--num_beams",type=int,default=1)
     parser.add_argument("--aug_num",type=int,default=10)
     parser.add_argument("--wsc_aug_type",type=str,default='np_extra')
+    parser.add_argument("--model_name_or_path",type=str,default='t5-large')
     args = parser.parse_args()
     return args
 
@@ -676,13 +800,13 @@ def init_args():
 
 if __name__ == "__main__":
     args=init_args()
-    myaug=FEWGLUEAUGS[args.task_name]()
+    myaug=FEWGLUEAUGS[args.task_name](args)
     data_path="data/FewGLUE_dev32/"
     if os.path.exists(data_path)==False:
         os.makedirs(data_path)
     set_seed(1)
     aug_num=args.aug_num
-    t5aug=gen_aug_T5.T5Aug()
+    t5aug=gen_aug_T5.T5Aug(model_path=args.model_name_or_path)
     aug_func=t5aug.generate_blanks
     aug_func_name='t5_{}_{}_{}_sample{}_beam{}_augnum{}'.format(args.label_type,args.mask_ratio,args.aug_type,int(args.do_sample),args.num_beams,aug_num)
     aug_kwargs={'label_type':args.label_type,'mask_ratio':args.mask_ratio,'aug_type':args.aug_type,'aug_kwargs':{'do_sample':args.do_sample,'num_beams':args.num_beams,'num_return_sequences':1}}
@@ -692,3 +816,109 @@ if __name__ == "__main__":
         new_examples=myaug.augment(data_path,aug_func,aug_func_name,aug_kwargs,aug_num=aug_num,wsc_aug_type=args.wsc_aug_type)
     else:
         new_examples=myaug.augment(data_path,aug_func,aug_func_name,aug_kwargs,aug_num=aug_num)
+
+
+'''
+CUDA_VISIBLE_DEVICES=6 python -m genaug.total_gen_aug --task_name ReCoRD --mask_ratio 0.3 --aug_type 'default' --label_type 'flip' --do_sample --num_beams 1  --aug_num 10
+CUDA_VISIBLE_DEVICES=7 python -m genaug.total_gen_aug --task_name ReCoRD --mask_ratio 0.5 --aug_type 'rand_iter_10' --label_type 'flip' --do_sample --num_beams 1  --aug_num 10
+
+
+CUDA_VISIBLE_DEVICES=0 python -m genaug.total_gen_aug --task_name ReCoRD --mask_ratio 0.1 --aug_type 'rand_iter_10' --label_type 'keep' --do_sample --aug_num 10 >myout.file 2>&1 &
+CUDA_VISIBLE_DEVICES=1 nohup python -m genaug.total_gen_aug --task_name ReCoRD --mask_ratio 0.1 --aug_type 'rand_iter_10' --label_type 'keep' --aug_num 10 >myout.file 2>&1 &
+CUDA_VISIBLE_DEVICES=2 nohup python -m genaug.total_gen_aug --task_name ReCoRD --mask_ratio 0.1 --aug_type 'rand_iter_10' --label_type 'keep' --num_beams 10 --aug_num 10 >myout.file 2>&1 &
+CUDA_VISIBLE_DEVICES=3 nohup python -m genaug.total_gen_aug --task_name ReCoRD --mask_ratio 0.1 --aug_type 'default' --label_type 'keep' --do_sample --aug_num 10 >myout.file 2>&1 &
+CUDA_VISIBLE_DEVICES=4 nohup python -m genaug.total_gen_aug --task_name ReCoRD --mask_ratio 0.1 --aug_type 'default' --label_type 'keep' --aug_num 10 >myout.file 2>&1 &
+CUDA_VISIBLE_DEVICES=6 nohup python -m genaug.total_gen_aug --task_name ReCoRD --mask_ratio 0.1 --aug_type 'default' --label_type 'keep' --num_beams 10 --aug_num 10 >myout.file 2>&1 &
+
+# todo 
+CUDA_VISIBLE_DEVICES=2 nohup python -m genaug.total_gen_aug --task_name ReCoRD --mask_ratio 0.1 --aug_type 'rand_iter_10' --label_type 'flip' --do_sample --aug_num 10 >myout.file 2>&1 &
+CUDA_VISIBLE_DEVICES=3 nohup python -m genaug.total_gen_aug --task_name ReCoRD --mask_ratio 0.1 --aug_type 'rand_iter_10' --label_type 'flip' --aug_num 10 >myout.file 2>&1 &
+CUDA_VISIBLE_DEVICES=4 nohup python -m genaug.total_gen_aug --task_name ReCoRD --mask_ratio 0.1 --aug_type 'rand_iter_10' --label_type 'flip' --num_beams 10 --aug_num 10 >myout.file 2>&1 &
+CUDA_VISIBLE_DEVICES=5 nohup python -m genaug.total_gen_aug --task_name ReCoRD --mask_ratio 0.1 --aug_type 'default' --label_type 'flip' --do_sample --aug_num 10 >myout.file 2>&1 &
+CUDA_VISIBLE_DEVICES=6 nohup python -m genaug.total_gen_aug --task_name ReCoRD --mask_ratio 0.1 --aug_type 'default' --label_type 'flip' --aug_num 10 >myout.file 2>&1 &
+CUDA_VISIBLE_DEVICES=7 nohup python -m genaug.total_gen_aug --task_name ReCoRD --mask_ratio 0.1 --aug_type 'default' --label_type 'flip' --num_beams 10 --aug_num 10 >myout.file 2>&1 &
+
+CUDA_VISIBLE_DEVICES=0 nohup python -m genaug.total_gen_aug --task_name ReCoRD --mask_ratio 0.3 --aug_type 'rand_iter_10' --label_type 'keep' --do_sample --aug_num 10 >myout.file 2>&1 &
+CUDA_VISIBLE_DEVICES=1 nohup python -m genaug.total_gen_aug --task_name ReCoRD --mask_ratio 0.3 --aug_type 'rand_iter_10' --label_type 'keep' --aug_num 10 >myout.file 2>&1 &
+CUDA_VISIBLE_DEVICES=2 nohup python -m genaug.total_gen_aug --task_name ReCoRD --mask_ratio 0.3 --aug_type 'rand_iter_10' --label_type 'keep' --num_beams 10 --aug_num 10 >myout.file 2>&1 &
+CUDA_VISIBLE_DEVICES=4 nohup python -m genaug.total_gen_aug --task_name ReCoRD --mask_ratio 0.3 --aug_type 'default' --label_type 'keep' --do_sample --aug_num 10 >myout.file 2>&1 &
+CUDA_VISIBLE_DEVICES=5 nohup python -m genaug.total_gen_aug --task_name ReCoRD --mask_ratio 0.3 --aug_type 'default' --label_type 'keep' --aug_num 10 >myout.file 2>&1 &
+CUDA_VISIBLE_DEVICES=7 nohup python -m genaug.total_gen_aug --task_name ReCoRD --mask_ratio 0.3 --aug_type 'default' --label_type 'keep' --num_beams 10 --aug_num 10 >myout.file 2>&1 &
+
+
+CUDA_VISIBLE_DEVICES=5 nohup python -m genaug.total_gen_aug --task_name ReCoRD --mask_ratio 0.3 --aug_type 'rand_iter_10' --label_type 'flip' --do_sample --aug_num 10 >myout.file 2>&1 &
+CUDA_VISIBLE_DEVICES=6 nohup python -m genaug.total_gen_aug --task_name ReCoRD --mask_ratio 0.3 --aug_type 'rand_iter_10' --label_type 'flip' --aug_num 10 >myout.file 2>&1 &
+CUDA_VISIBLE_DEVICES=7 nohup python -m genaug.total_gen_aug --task_name ReCoRD --mask_ratio 0.3 --aug_type 'rand_iter_10' --label_type 'flip' --num_beams 10 --aug_num 10 >myout.file 2>&1 &
+CUDA_VISIBLE_DEVICES=0 nohup python -m genaug.total_gen_aug --task_name ReCoRD --mask_ratio 0.3 --aug_type 'default' --label_type 'flip' --do_sample --aug_num 10 >myout.file 2>&1 &
+CUDA_VISIBLE_DEVICES=1 nohup python -m genaug.total_gen_aug --task_name ReCoRD --mask_ratio 0.3 --aug_type 'default' --label_type 'flip' --aug_num 10 >myout.file 2>&1 &
+CUDA_VISIBLE_DEVICES=2 nohup python -m genaug.total_gen_aug --task_name ReCoRD --mask_ratio 0.3 --aug_type 'default' --label_type 'flip' --num_beams 10 --aug_num 10 >myout.file 2>&1 &
+
+
+CUDA_VISIBLE_DEVICES=0 nohup python -m genaug.total_gen_aug --task_name ReCoRD --mask_ratio 0.5 --aug_type 'rand_iter_10' --label_type 'keep' --do_sample --aug_num 10 >myout.file 2>&1 &
+CUDA_VISIBLE_DEVICES=1 nohup python -m genaug.total_gen_aug --task_name ReCoRD --mask_ratio 0.5 --aug_type 'rand_iter_10' --label_type 'keep' --aug_num 10 >myout.file 2>&1 &
+CUDA_VISIBLE_DEVICES=3 nohup python -m genaug.total_gen_aug --task_name ReCoRD --mask_ratio 0.5 --aug_type 'rand_iter_10' --label_type 'keep' --num_beams 10 --aug_num 10 >myout.file 2>&1 &
+CUDA_VISIBLE_DEVICES=6 nohup python -m genaug.total_gen_aug --task_name ReCoRD --mask_ratio 0.5 --aug_type 'default' --label_type 'keep' --do_sample --aug_num 10 >myout.file 2>&1 &
+CUDA_VISIBLE_DEVICES=7 nohup python -m genaug.total_gen_aug --task_name ReCoRD --mask_ratio 0.5 --aug_type 'default' --label_type 'keep' --aug_num 10 >myout.file 2>&1 &
+CUDA_VISIBLE_DEVICES=6 nohup python -m genaug.total_gen_aug --task_name ReCoRD --mask_ratio 0.5 --aug_type 'default' --label_type 'keep' --num_beams 10 --aug_num 10 >myout.file 2>&1 &
+
+CUDA_VISIBLE_DEVICES=4 nohup python -m genaug.total_gen_aug --task_name ReCoRD --mask_ratio 0.5 --aug_type 'rand_iter_10' --label_type 'flip' --do_sample --aug_num 10 >myout.file 2>&1 &
+CUDA_VISIBLE_DEVICES=5 nohup python -m genaug.total_gen_aug --task_name ReCoRD --mask_ratio 0.5 --aug_type 'rand_iter_10' --label_type 'flip' --aug_num 10 >myout.file 2>&1 &
+CUDA_VISIBLE_DEVICES=6 nohup python -m genaug.total_gen_aug --task_name ReCoRD --mask_ratio 0.5 --aug_type 'rand_iter_10' --label_type 'flip' --num_beams 10 --aug_num 10 >myout.file 2>&1 &
+CUDA_VISIBLE_DEVICES=7 nohup python -m genaug.total_gen_aug --task_name ReCoRD --mask_ratio 0.5 --aug_type 'default' --label_type 'flip' --do_sample --aug_num 10 >myout.file 2>&1 &
+CUDA_VISIBLE_DEVICES=6 nohup python -m genaug.total_gen_aug --task_name ReCoRD --mask_ratio 0.5 --aug_type 'default' --label_type 'flip' --aug_num 10 >myout.file 2>&1 &
+CUDA_VISIBLE_DEVICES=7 nohup python -m genaug.total_gen_aug --task_name ReCoRD --mask_ratio 0.5 --aug_type 'default' --label_type 'flip' --num_beams 10 --aug_num 10 >myout.file 2>&1 &
+
+'''
+
+
+'''
+CUDA_VISIBLE_DEVICES=0 nohup python -m genaug.total_gen_aug --task_name WSC --mask_ratio 0.1 --aug_type 'rand_iter_1' --label_type 'keep' --do_sample --aug_num 10 >myout.file 2>&1 &
+CUDA_VISIBLE_DEVICES=1 nohup python -m genaug.total_gen_aug --task_name WSC --mask_ratio 0.1 --aug_type 'rand_iter_1' --label_type 'keep' --aug_num 10 >myout.file 2>&1 &
+CUDA_VISIBLE_DEVICES=2 nohup python -m genaug.total_gen_aug --task_name WSC --mask_ratio 0.1 --aug_type 'rand_iter_1' --label_type 'keep' --num_beams 10 --aug_num 10 >myout.file 2>&1 &
+CUDA_VISIBLE_DEVICES=4 nohup python -m genaug.total_gen_aug --task_name WSC --mask_ratio 0.1 --aug_type 'default' --label_type 'keep' --do_sample --aug_num 10 >myout.file 2>&1 &
+CUDA_VISIBLE_DEVICES=5 nohup python -m genaug.total_gen_aug --task_name WSC --mask_ratio 0.1 --aug_type 'default' --label_type 'keep' --aug_num 10 >myout.file 2>&1 &
+CUDA_VISIBLE_DEVICES=6 nohup python -m genaug.total_gen_aug --task_name WSC --mask_ratio 0.1 --aug_type 'default' --label_type 'keep' --num_beams 10 --aug_num 10 >myout.file 2>&1 &
+
+CUDA_VISIBLE_DEVICES=7 nohup python -m genaug.total_gen_aug --task_name WSC --mask_ratio 0.3 --aug_type 'rand_iter_1' --label_type 'keep' --do_sample --aug_num 10 >myout.file 2>&1 &
+CUDA_VISIBLE_DEVICES=0 nohup python -m genaug.total_gen_aug --task_name WSC --mask_ratio 0.3 --aug_type 'rand_iter_1' --label_type 'keep' --aug_num 10 >myout.file 2>&1 &
+CUDA_VISIBLE_DEVICES=1 nohup python -m genaug.total_gen_aug --task_name WSC --mask_ratio 0.3 --aug_type 'rand_iter_1' --label_type 'keep' --num_beams 10 --aug_num 10 >myout.file 2>&1 &
+CUDA_VISIBLE_DEVICES=2 nohup python -m genaug.total_gen_aug --task_name WSC --mask_ratio 0.3 --aug_type 'default' --label_type 'keep' --do_sample --aug_num 10 >myout.file 2>&1 &
+CUDA_VISIBLE_DEVICES=6 nohup python -m genaug.total_gen_aug --task_name WSC --mask_ratio 0.3 --aug_type 'default' --label_type 'keep' --aug_num 10 >myout.file 2>&1 &
+CUDA_VISIBLE_DEVICES=0 nohup python -m genaug.total_gen_aug --task_name WSC --mask_ratio 0.3 --aug_type 'default' --label_type 'keep' --num_beams 10 --aug_num 10 >myout.file 2>&1 &
+
+CUDA_VISIBLE_DEVICES=1 nohup python -m genaug.total_gen_aug --task_name WSC --mask_ratio 0.3 --aug_type 'rand_iter_1' --label_type 'flip' --do_sample --aug_num 10 >myout.file 2>&1 &
+CUDA_VISIBLE_DEVICES=3 nohup python -m genaug.total_gen_aug --task_name WSC --mask_ratio 0.3 --aug_type 'rand_iter_1' --label_type 'flip' --aug_num 10 >myout.file 2>&1 &
+CUDA_VISIBLE_DEVICES=6 nohup python -m genaug.total_gen_aug --task_name WSC --mask_ratio 0.3 --aug_type 'rand_iter_1' --label_type 'flip' --num_beams 10 --aug_num 10 >myout.file 2>&1 &
+CUDA_VISIBLE_DEVICES=7 nohup python -m genaug.total_gen_aug --task_name WSC --mask_ratio 0.3 --aug_type 'default' --label_type 'flip' --do_sample --aug_num 10 >myout.file 2>&1 &
+CUDA_VISIBLE_DEVICES=2 nohup python -m genaug.total_gen_aug --task_name WSC --mask_ratio 0.3 --aug_type 'default' --label_type 'flip' --aug_num 10 >myout.file 2>&1 &
+CUDA_VISIBLE_DEVICES=3 nohup python -m genaug.total_gen_aug --task_name WSC --mask_ratio 0.3 --aug_type 'default' --label_type 'flip' --num_beams 10 --aug_num 10 >myout.file 2>&1 &
+
+CUDA_VISIBLE_DEVICES=4 nohup python -m genaug.total_gen_aug --task_name WSC --mask_ratio 0.5 --aug_type 'rand_iter_1' --label_type 'keep' --do_sample --aug_num 10 >myout.file 2>&1 &
+CUDA_VISIBLE_DEVICES=5 nohup python -m genaug.total_gen_aug --task_name WSC --mask_ratio 0.5 --aug_type 'rand_iter_1' --label_type 'keep' --aug_num 10 >myout.file 2>&1 &
+CUDA_VISIBLE_DEVICES=6 nohup python -m genaug.total_gen_aug --task_name WSC --mask_ratio 0.5 --aug_type 'rand_iter_1' --label_type 'keep' --num_beams 10 --aug_num 10 >myout.file 2>&1 &
+CUDA_VISIBLE_DEVICES=7 nohup python -m genaug.total_gen_aug --task_name WSC --mask_ratio 0.5 --aug_type 'default' --label_type 'keep' --do_sample --aug_num 10 >myout.file 2>&1 &
+CUDA_VISIBLE_DEVICES=0 nohup python -m genaug.total_gen_aug --task_name WSC --mask_ratio 0.5 --aug_type 'default' --label_type 'keep' --aug_num 10 >myout.file 2>&1 &
+CUDA_VISIBLE_DEVICES=1 nohup python -m genaug.total_gen_aug --task_name WSC --mask_ratio 0.5 --aug_type 'default' --label_type 'keep' --num_beams 10 --aug_num 10 >myout.file 2>&1 &
+
+CUDA_VISIBLE_DEVICES=0 nohup python -m genaug.total_gen_aug --task_name WSC --mask_ratio 0.5 --aug_type 'rand_iter_1' --label_type 'flip' --do_sample --aug_num 10 >myout.file 2>&1 &
+CUDA_VISIBLE_DEVICES=1 nohup python -m genaug.total_gen_aug --task_name WSC --mask_ratio 0.5 --aug_type 'rand_iter_1' --label_type 'flip' --aug_num 10 >myout.file 2>&1 &
+CUDA_VISIBLE_DEVICES=2 nohup python -m genaug.total_gen_aug --task_name WSC --mask_ratio 0.5 --aug_type 'rand_iter_1' --label_type 'flip' --num_beams 10 --aug_num 10 >myout.file 2>&1 &
+CUDA_VISIBLE_DEVICES=3 nohup python -m genaug.total_gen_aug --task_name WSC --mask_ratio 0.5 --aug_type 'default' --label_type 'flip' --do_sample --aug_num 10 >myout.file 2>&1 &
+CUDA_VISIBLE_DEVICES=7 nohup python -m genaug.total_gen_aug --task_name WSC --mask_ratio 0.5 --aug_type 'default' --label_type 'flip' --aug_num 10 >myout.file 2>&1 &
+CUDA_VISIBLE_DEVICES=0 nohup python -m genaug.total_gen_aug --task_name WSC --mask_ratio 0.5 --aug_type 'default' --label_type 'flip' --num_beams 10 --aug_num 10 >myout.file 2>&1 &
+
+CUDA_VISIBLE_DEVICES=5 nohup python -m genaug.total_gen_aug --task_name WSC --mask_ratio 0.8 --aug_type 'rand_iter_1' --label_type 'keep' --do_sample --aug_num 10 >myout.file 2>&1 &
+CUDA_VISIBLE_DEVICES=7 nohup python -m genaug.total_gen_aug --task_name WSC --mask_ratio 0.8 --aug_type 'rand_iter_1' --label_type 'keep' --aug_num 10 >myout.file 2>&1 &
+CUDA_VISIBLE_DEVICES=7 nohup python -m genaug.total_gen_aug --task_name WSC --mask_ratio 0.8 --aug_type 'rand_iter_1' --label_type 'keep' --num_beams 10 --aug_num 10 >myout.file 2>&1 &
+CUDA_VISIBLE_DEVICES=0 nohup python -m genaug.total_gen_aug --task_name WSC --mask_ratio 0.8 --aug_type 'default' --label_type 'keep' --do_sample --aug_num 10 >myout.file 2>&1 &
+CUDA_VISIBLE_DEVICES=2 nohup python -m genaug.total_gen_aug --task_name WSC --mask_ratio 0.8 --aug_type 'default' --label_type 'keep' --aug_num 10 >myout.file 2>&1 &
+CUDA_VISIBLE_DEVICES=6 nohup python -m genaug.total_gen_aug --task_name WSC --mask_ratio 0.8 --aug_type 'default' --label_type 'keep' --num_beams 10 --aug_num 10 >myout.file 2>&1 &
+
+CUDA_VISIBLE_DEVICES=0 nohup python -m genaug.total_gen_aug --task_name WSC --mask_ratio 0.8 --aug_type 'rand_iter_1' --label_type 'flip' --do_sample --aug_num 10 >myout.file 2>&1 &
+CUDA_VISIBLE_DEVICES=3 nohup python -m genaug.total_gen_aug --task_name WSC --mask_ratio 0.8 --aug_type 'rand_iter_1' --label_type 'flip' --aug_num 10 >myout.file 2>&1 &
+CUDA_VISIBLE_DEVICES=7 nohup python -m genaug.total_gen_aug --task_name WSC --mask_ratio 0.8 --aug_type 'rand_iter_1' --label_type 'flip' --num_beams 10 --aug_num 10 >myout.file 2>&1 &
+CUDA_VISIBLE_DEVICES=0 nohup python -m genaug.total_gen_aug --task_name WSC --mask_ratio 0.8 --aug_type 'default' --label_type 'flip' --do_sample --aug_num 10 >myout.file 2>&1 &
+CUDA_VISIBLE_DEVICES=3 nohup python -m genaug.total_gen_aug --task_name WSC --mask_ratio 0.8 --aug_type 'default' --label_type 'flip' --aug_num 10 >myout.file 2>&1 &
+CUDA_VISIBLE_DEVICES=7 nohup python -m genaug.total_gen_aug --task_name WSC --mask_ratio 0.8 --aug_type 'default' --label_type 'flip' --num_beams 10 --aug_num 10 >myout.file 2>&1 &
+
+'''
