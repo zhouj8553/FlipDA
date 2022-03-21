@@ -606,7 +606,7 @@ class RecordTaskHelper(TaskHelper):
         inputs = self.wrapper.generate_default_inputs(batch, is_training=True)
 
         inputs["is_training"] = True
-        prediction_scores = self.wrapper.model(**inputs)[0].view(-1, self.wrapper.model.config.vocab_size)
+        prediction_scores = self.wrapper.model(**inputs)[0].view(-1, self.wrapper.model.model.config.vocab_size)
         loss_fct = CrossEntropyLoss()
 
         # all_candidate_token_ids.shape() == batch_size x max_num_candidates x max_seq_len
@@ -630,6 +630,48 @@ class RecordTaskHelper(TaskHelper):
 
         return total_loss
 
+    def train_mixup_step(self,batch1,batch2,**kwargs)-> Optional[torch.Tensor]:
+        if 'mixup_alpha' in kwargs and kwargs['mixup_alpha']>0:
+            lam=np.random.beta(kwargs['mixup_alpha'],kwargs['mixup_alpha'])
+        else:
+            lam=1
+
+        if self.wrapper.config.wrapper_type == 'sequence_classifier':
+            return
+        assert self.wrapper.config.wrapper_type == 'mlm', 'train_step() for COPA is only implemented for MLM models'
+
+        inputs1 = self.wrapper.generate_default_inputs(batch1,is_training=True) # 'input_ids','attention_mask'
+        inputs2 = self.wrapper.generate_default_inputs(batch2,is_training=True)
+        x1=self.wrapper.model.model.get_input_embeddings()(inputs1['input_ids'])
+        x2=self.wrapper.model.model.get_input_embeddings()(inputs2['input_ids'])
+        inputs_embeds=lam*x1+(1-lam)*x2
+        attention_mask=torch.max(inputs1['attention_mask'],inputs2['attention_mask'])
+        inputs={'inputs_embeds':inputs_embeds,'attention_mask':attention_mask,'is_training':True}
+        prediction_scores = self.wrapper.model(**inputs)[0].view(-1, self.wrapper.model.model.config.vocab_size)
+        loss_fct = CrossEntropyLoss()
+        def calculate_loss(batch,prediction_scores):
+            all_candidate_token_ids = batch['candidate_token_ids']
+
+            # all_candidate_labels.shape() == batch_size x max_num_candidates
+            all_candidate_labels = batch['candidate_labels']
+
+            all_candidate_token_ids = all_candidate_token_ids.permute(1, 0, 2)
+            all_candidate_labels = all_candidate_labels.permute(1, 0)
+
+            total_loss = 0
+            loss_correct_label = loss_fct(prediction_scores, all_candidate_token_ids[0].view(-1))
+
+            # compute hinge loss
+            for candidate_token_ids, candidate_labels in zip(all_candidate_token_ids[1:], all_candidate_labels[1:]):
+                loss_wrong_label = loss_fct(prediction_scores, candidate_token_ids.view(-1))
+                hinge_loss = 1 + loss_correct_label - loss_wrong_label
+                hinge_loss[hinge_loss < 0] = 0
+                total_loss += hinge_loss
+            return total_loss
+
+        loss=calculate_loss(batch1,prediction_scores)*lam+calculate_loss(batch2,prediction_scores)*(1-lam)
+        return loss
+
     def eval_step(self, batch: Dict[str, torch.Tensor], batch_size: int = 8, decoding_strategy: str = 'default'):
         assert self.wrapper.config.wrapper_type == 'mlm', 'eval_step() for ReCoRD is only implemented for MLM models'
         assert batch['input_ids'].shape[0] == 1, "eval_step() for ReCoRD is only implemented for batch_size=1"
@@ -640,14 +682,16 @@ class RecordTaskHelper(TaskHelper):
 
         # group choices by length to speed up decoding
         choices_grouped_by_length = defaultdict(list)
-
-        for idx, (choice_ids, label) in enumerate(zip(batch['candidate_token_ids'][0], batch['candidate_labels'][0])):
-            if label < 0:
-                continue
-            num_masks = sum(1 for x in choice_ids if x != -100)
-            choice = self.original_choices[question_idx][idx]
-            choices_grouped_by_length[num_masks].append((choice, choice_ids, label))
-
+        try:
+            for idx, (choice_ids, label) in enumerate(zip(batch['candidate_token_ids'][0], batch['candidate_labels'][0])):
+                if label < 0:
+                    continue
+                num_masks = sum(1 for x in choice_ids if x != -100)
+                choice = self.original_choices[question_idx][idx]
+                choices_grouped_by_length[num_masks].append((choice, choice_ids, label))
+        except:
+            import pdb 
+            pdb.set_trace()
         input_ids = {}
         initial_outputs = {}
 
@@ -656,8 +700,8 @@ class RecordTaskHelper(TaskHelper):
             input_ids[num_masks] = trim_input_ids(batch['input_ids'], num_masks=num_masks,
                                                   pad_token_id=self.wrapper.tokenizer.pad_token_id,
                                                   mask_token_id=self.wrapper.tokenizer.mask_token_id)
-
-            initial_outputs[num_masks] = self.wrapper.model(input_ids=input_ids[num_masks], is_training=False)
+            attention_mask = torch.tensor([[1] * len(input_ids[num_masks][0])], dtype=torch.long).cuda()
+            initial_outputs[num_masks] = self.wrapper.model(input_ids=input_ids[num_masks], attention_mask=attention_mask, is_training=False)
 
         for num_masks, choices_with_labels in choices_grouped_by_length.items():
 
@@ -696,7 +740,8 @@ class RecordTaskHelper(TaskHelper):
             if first_call:
                 outputs = initial_output
             else:
-                outputs = self.wrapper.model(input_ids=input_ids, is_training=False)
+                attention_mask = torch.tensor([[1] * len(input_ids[0])], dtype=torch.long).cuda()
+                outputs = self.wrapper.model(input_ids=input_ids,attention_mask=attention_mask, is_training=False)
 
             next_token_logits = outputs[0]
             next_token_logits = torch.nn.Softmax(dim=2)(next_token_logits)
@@ -721,8 +766,8 @@ class RecordTaskHelper(TaskHelper):
                         if highest_prob is None or m_prob > highest_prob:
                             highest_prob = m_prob
                             mask_pos, masked_id = m_pos, m_id
-
-                    log_probabilities[batch_idx].append(math.log(ntl[mask_pos][masked_id].item()))
+                    log_value=math.log(ntl[mask_pos][masked_id].item()) if ntl[mask_pos][masked_id].item()>0 else -1000
+                    log_probabilities[batch_idx].append(log_value)
                     input_ids[batch_idx][mask_pos] = masked_id
                     target_sequences[batch_idx][mask_pos] = -100
 

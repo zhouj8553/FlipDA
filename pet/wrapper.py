@@ -217,7 +217,6 @@ class NoisyStudent(torch.nn.Module):
                               token_type_ids=token_type_ids,
                               labels=labels, **kwargs)
 
-# todo
 # Re-implement RandomSampler to decouple independent random seed.
 class MyRandomSampler(Sampler):
     def __init__(self, data_source, seed) -> None:
@@ -267,7 +266,6 @@ class TransformerModelWrapper:
         tokenizer_class = MODEL_CLASSES[wrapper.config.model_type]['tokenizer']
         wrapper.tokenizer = tokenizer_class.from_pretrained(path)
 
-        # TODO: noisy student
         wrapper.model = NoisyStudent(wrapper.config, wrapper.tokenizer)
         model_class = MODEL_CLASSES[wrapper.config.model_type][wrapper.config.wrapper_type]
         wrapper.model.model = model_class.from_pretrained(path)
@@ -544,9 +542,17 @@ class TransformerModelWrapper:
     def _convert_examples_to_features(self, examples: List[InputExample], labelled: bool = True,
                                       priming: bool = False) -> List[InputFeatures]:
         features = []
+        if self.config.task_name=='record': # check whether there are repeated question_idx
+            question_idxs=list(set([e.meta['question_idx'] for e in examples]))
+            if len(question_idxs)==len(examples): repeated=False
+            else: repeated=True;record_eid=0; 
+
         for (ex_index, example) in enumerate(examples):
             if ex_index % 10000 == 0:
                 logger.info("Writing example {}".format(ex_index))
+            if self.config.task_name=='record' and repeated==True:
+                example.meta['question_idx']=record_eid
+                record_eid+=1
             input_features = self.preprocessor.get_input_features(example, labelled=labelled, priming=priming)
             if self.task_helper:
                 self.task_helper.add_special_input_features(example, input_features)
@@ -556,6 +562,8 @@ class TransformerModelWrapper:
                 logger.info(f'--- Example {ex_index} ---')
                 logger.info(input_features.pretty_print(self.tokenizer))
             """
+        # if self.config.task_name=='record' and repeated==True:
+        #     examples=examples_copy
         return features
 
     def _mask_tokens(self, input_ids):

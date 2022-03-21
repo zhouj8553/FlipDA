@@ -710,12 +710,15 @@ class RecordProcessor(DataProcessor):
                 idx = example_json['idx']
                 text = example_json['passage']['text']
                 entities = set()
-
-                for entity_json in example_json['passage']['entities']:
-                    start = entity_json['start']
-                    end = entity_json['end']
-                    entity = text[start:end + 1]
-                    entities.add(entity)
+                if 'entity_names' in example_json['passage']:
+                    for entity_name in example_json['passage']['entity_names']:
+                        entities.add(entity_name)
+                else:
+                    for entity_json in example_json['passage']['entities']:
+                        start = entity_json['start']
+                        end = entity_json['end']
+                        entity = text[start:end + 1]
+                        entities.add(entity)
 
                 entities = list(entities)
 

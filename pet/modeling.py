@@ -25,6 +25,7 @@ from sklearn.metrics import f1_score
 from transformers.data.metrics import simple_accuracy
 
 import log
+from pet import evaluate_record
 from pet.utils import InputExample, exact_match, save_logits, save_predictions, softmax, LogitsList, set_seed, eq_div
 from pet.wrapper import TransformerModelWrapper, SEQUENCE_CLASSIFIER_WRAPPER, WrapperConfig
 
@@ -599,6 +600,11 @@ def evaluate(model: TransformerModelWrapper, eval_data: List[InputExample], conf
             scores[metric] = exact_match(predictions, results['labels'], results['question_ids'])
         else:
             raise ValueError(f"Metric '{metric}' not implemented")
+    # import pdb 
+    # pdb.set_trace()
+    if model.config.task_name=='record':
+        predictions_with_idx = model.task_helper.output
+        scores['f1']=evaluate_record.cal_f1(predictions_with_idx,eval_data)
 
     results['scores'] = scores
     results['predictions'] = predictions
