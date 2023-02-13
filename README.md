@@ -101,13 +101,17 @@ Note that we do not try all the hyperparameter combinations to save time and avo
 This paper will appear at ACL 2022 (Main Conference). Please cite us if FlipDA is useful in your work:
 
 ```
-@misc{zhou2021flipda,
-  title={FlipDA: Effective and Robust Data Augmentation for Few-Shot Learning}, 
-  author={Jing Zhou and Yanan Zheng and Jie Tang and Jian Li and Zhilin Yang},
-  year={2021},
-  eprint={2108.06332},
-  archivePrefix={arXiv},
-  primaryClass={cs.CL}
+@inproceedings{DBLP:conf/acl/ZhouZTJY22,
+  author    = {Jing Zhou and
+               Yanan Zheng and
+               Jie Tang and
+               Li Jian and
+               Zhilin Yang},
+  title     = {FlipDA: Effective and Robust Data Augmentation for Few-Shot Learning},
+  booktitle = {{ACL} {(1)}},
+  pages     = {8646--8665},
+  publisher = {Association for Computational Linguistics},
+  year      = {2022}
 }
 ```
 
